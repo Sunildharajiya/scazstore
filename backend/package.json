@@ -1,0 +1,22 @@
+{
+  "name": "scazestore",
+  "version": "1.0.0",
+  "description": "",
+  "license": "ISC",
+  "author": "sunil dharajiya",
+  "type": "module",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "npx nodemon src/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "mongodb": "^7.8.0",
+    "mongoose": "^9.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

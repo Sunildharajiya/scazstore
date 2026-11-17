@@ -2,7 +2,6 @@
 import mongoose from 'mongoose';
 
 export const mongoConnect = async () => {
-  // Replace the uri string with your connection string
   const atlas = process.env.URI
 
   try{

@@ -1,4 +1,27 @@
-const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+const API_URL = (
+  import.meta.env.VITE_API_BASE_URL ||
+  "http://localhost:5000/api/product"
+).replace(/\/+$/, "");
+
+// Handle API responses
+const handleResponse = async (response) => {
+  let data;
+
+  try {
+    data = await response.json();
+  } catch {
+    throw new Error("Invalid server response.");
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message || `Request failed: ${response.status}`
+    );
+  }
+
+  return data;
+};
 
 // Fetch products by section
 export const getProducts = async ({
@@ -7,34 +30,40 @@ export const getProducts = async ({
   category = "",
   latitude,
   longitude,
-}) => {
-  const params = new URLSearchParams({
-    section,
-    limit: String(limit),
-  });
+} = {}) => {
+  const params = new URLSearchParams();
 
-  if (category) {
-    params.append("category", category);
-  }
+  if (section) params.append("section", section);
+
+  params.append("limit", String(limit));
+
+  if (category) params.append("category", category);
 
   if (latitude != null && longitude != null) {
-    params.append("latitude", latitude);
-    params.append("longitude", longitude);
+    params.append("latitude", String(latitude));
+    params.append("longitude", String(longitude));
   }
 
   const response = await fetch(
     `${API_URL}/products?${params.toString()}`
   );
 
-  if (!response.ok) {
-    throw new Error("Unable to load products.");
-  }
+  
 
-  const data = await response.json();
+  const data = await handleResponse(response);
 
-  // Supports either an array or { products: [] }
-  return Array.isArray(data) ? data : data.products || [];
+console.log("[PRODUCT API] Response:", data);
+
+if (Array.isArray(data)) return data;
+
+if (Array.isArray(data.products)) {
+  return data.products;
+}
+
+throw new Error("Products array not found in API response.");
 };
+
+
 
 // Add product to cart
 export const addProductToCart = async (productId, quantity = 1) => {
@@ -49,11 +78,7 @@ export const addProductToCart = async (productId, quantity = 1) => {
     }),
   });
 
-  if (!response.ok) {
-    throw new Error("Unable to add product to cart.");
-  }
-
-  return response.json();
+  return handleResponse(response);
 };
 
 // Fetch category products with filters and pagination
@@ -68,8 +93,9 @@ export const getCategoryProducts = async ({
 } = {}) => {
   const params = new URLSearchParams();
 
-  params.append("category", category);
-  params.append("search", search);
+  if (category) params.append("category", category);
+  if (search) params.append("search", search);
+
   params.append("sort", sort);
   params.append("page", String(page));
   params.append("limit", String(limit));
@@ -86,16 +112,15 @@ export const getCategoryProducts = async ({
     `${API_URL}/products?${params.toString()}`
   );
 
-  if (!response.ok) {
-    throw new Error("Unable to load products.");
-  }
-
-  const data = await response.json();
+  const data = await handleResponse(response);
 
   return {
     products: Array.isArray(data)
       ? data
-      : data.products || [],
+      : Array.isArray(data.products)
+      ? data.products
+      : [],
+
     totalPages: data.totalPages || 1,
     totalProducts: data.totalProducts || 0,
   };

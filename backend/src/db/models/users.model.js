@@ -6,20 +6,35 @@ const userSchema = new mongoose.Schema({
     type:String,
     required:[true , "First Name is required"]
   },
+  profilePicture:{
+    type:String,
+    required:false,
+    default:undefined
+  },
   LastName:{
     type:String,
     required:[true , "Your Last name is required"]
   },
   userName:{
-    type:string,
+    type:String,
     required:true,
-    match: [/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'],
+    match: [/^@?[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores.'],
     unique: true,
     set: function(value) {
       if (!value) return value;
       const trimmed = value.trim();
       return trimmed.startsWith('@') ? trimmed : `@${trimmed}`;
     }
+  },
+ role:{
+    immutable: true ,
+    default:"customer",
+    type:String,
+    required:true
+  },
+  dob:{
+   type:String,
+   required:false
   },
   password:{
     type: String,
@@ -34,12 +49,6 @@ const userSchema = new mongoose.Schema({
     lowercase: true, // Automatically converts "User@Mail.com" to "user@mail.com"
     match: [/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email address.']
   },
-  role:{
-    immutable: true ,
-    default:"customer",
-    type:string,
-    required:true
-  },
   mobile: {
     type: String, // String is preferred over Number to preserve leading zeros or country codes (+)
     required: true,
@@ -49,7 +58,7 @@ const userSchema = new mongoose.Schema({
     match: [/^\+?[1-9]\d{1,14}$/, 'Please provide a valid mobile number with country code.']
   },
   secondryMobile:{
-    type:string,
+    type:String,
     required:false,
     trim: true,
     // Allows international E.164 formats (e.g., +1234567890 or 1234567890, minimum 7 digits, max 15)
@@ -70,15 +79,19 @@ const userSchema = new mongoose.Schema({
       // Generic regex matching standard global postcodes/pincodes (alphanumeric, spaces, hyphens, 3-10 chars)
       match: [/^[a-zA-Z0-9\s-]{3,10}$/, 'Please provide a valid pincode or postcode.']
     }
-  }
+  },
+  refreshTokenHash: {
+  type: String,
+  default: null
+}
   
 },{ timestamps: true });
 
 
 //  PRE-SAVE HOOK: Automatically hashes password before saving to Atlas
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
   // Only hash the password if it has been modified (or is new)
-  if (!this.isModified('password')) return next();
+  if (!this.isModified('password')) return ;
 
   try {
     const salt = await bcrypt.genSalt(15); // Generate a secure salt

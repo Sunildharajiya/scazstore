@@ -1,8 +1,8 @@
 import express from 'express'
+import { userRouter } from './user.router.js'
+import { productRouter } from './product.router.js'
+
 export const mainRouter = express.Router()
 
-mainRouter.get("/h",(req,res)=>{
-  res.send("hello");
-  console.log(req.ip)
-})
-
+mainRouter.use('/users' ,userRouter)
+mainRouter.use('/product' ,productRouter)

@@ -1,7 +1,6 @@
-
 const API_URL = (
   import.meta.env.VITE_API_BASE_URL ||
-  "http://localhost:5000/api/product"
+  "http://localhost:5000/api"
 ).replace(/\/+$/, "");
 
 // Handle API responses
@@ -34,7 +33,6 @@ export const getProducts = async ({
   const params = new URLSearchParams();
 
   if (section) params.append("section", section);
-
   params.append("limit", String(limit));
 
   if (category) params.append("category", category);
@@ -48,26 +46,18 @@ export const getProducts = async ({
     `${API_URL}/products?${params.toString()}`
   );
 
-  
-
   const data = await handleResponse(response);
 
-console.log("[PRODUCT API] Response:", data);
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.products)) return data.products;
+  if (Array.isArray(data.data)) return data.data;
 
-if (Array.isArray(data)) return data;
-
-if (Array.isArray(data.products)) {
-  return data.products;
-}
-
-throw new Error("Products array not found in API response.");
+  return [];
 };
-
-
 
 // Add product to cart
 export const addProductToCart = async (productId, quantity = 1) => {
-  const response = await fetch(`${API_URL}/cart/items`, {
+  const response = await fetch(`${API_URL}/products/cart/items`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

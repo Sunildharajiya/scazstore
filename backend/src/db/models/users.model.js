@@ -67,14 +67,14 @@ const userSchema = new mongoose.Schema({
   deliveryAddress: {
     fullAddress: {
       type: String,
-      required: true,
+      required: false,
       trim: true,
       // Prevents empty spaces from passing as a valid address
       minLength: [10, 'Full address must be at least 10 characters long.'] 
     },
     pincode: {
       type: String, // String preserves alphanumeric formats (like UK/US postcodes) and leading zeros
-      required: true,
+      required: false,
       trim: true,
       // Generic regex matching standard global postcodes/pincodes (alphanumeric, spaces, hyphens, 3-10 chars)
       match: [/^[a-zA-Z0-9\s-]{3,10}$/, 'Please provide a valid pincode or postcode.']

@@ -54,7 +54,8 @@ ScazStore is a responsive ecommerce demonstration frontend built with React, Vit
 | `/login` | Login demo |
 | `/signup` | Signup demo |
 | `/account` | Profile, addresses, and order history |
-| `/notice` | External-link and production-feature notice |\n| `/notifications` | Demo notice for the planned notifications feature |
+| `/notice` | External-link and production-feature notice |
+| `/notifications` | Demo notice for the planned notifications feature |
 | `/about` | About ScazStore |
 | `/contact` | Contact demo |
 | `/help` | Help center |

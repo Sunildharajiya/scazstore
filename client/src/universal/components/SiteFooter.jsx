@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../../assets/images/scazstore-logo.png";
 
 const Footer = () => {
+  const [newsletterMessage, setNewsletterMessage] = useState("");
 
   const quickLinks = [
     { name: "Home", link: "/" },
@@ -58,7 +60,8 @@ const Footer = () => {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                console.log("Newsletter:", e.target.email.value);
+                setNewsletterMessage("Demo only: newsletter subscriptions are not connected yet.");
+                e.currentTarget.reset();
               }}
               className="flex w-full max-w-md bg-white rounded-full p-1.5"
             >
@@ -81,6 +84,11 @@ const Footer = () => {
             </form>
 
           </div>
+          {newsletterMessage && (
+            <p role="status" className="mt-3 text-center text-xs text-green-100/70 lg:text-right">
+              {newsletterMessage}
+            </p>
+          )}
 
         </div>
 
@@ -275,15 +283,13 @@ const FooterColumn = ({ title, links }) => (
 // SOCIAL LINKS
 
 const SocialLink = ({ label, icon }) => (
-
-  <a
-    href="#"
-    aria-label={label}
-    className="w-10 h-10 rounded-full bg-white/10 hover:bg-green-500 flex items-center justify-center font-bold text-lg transition"
+  <span
+    aria-label={`${label} link not configured`}
+    title={`${label} link not configured`}
+    className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-bold text-lg text-white/60"
   >
     {icon}
-  </a>
-
+  </span>
 );
 
 

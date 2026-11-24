@@ -1,735 +1,366 @@
-import { useCallback, useEffect, useState } from "react";
 
+
+
+
+import React from "react";
 import {
-  getProfile,
-  updateProfile,
-  getMyOrders,
-  getAddresses,
-  updateReceiverDetails,
-} from "../../services/accountApi";
+  useNavigate,
+  useOutletContext,
+} from "react-router-dom";
 
-const TABS = [
-  { id: "profile", label: "My Profile", icon: "👤" },
-  { id: "addresses", label: "My Addresses", icon: "📍" },
-  { id: "orders", label: "My Orders", icon: "📦" },
-];
 
-const ORDER_STEPS = [
-  "placed",
-  "confirmed",
-  "packed",
-  "shipped",
-  "out_for_delivery",
-  "delivered",
-];
+const ProfilePage = ({
+  user = {},
+  cartItems = [],
+  orders = [],
+  bills = [],
+  purchasedProducts = [],
+}) => {
 
-const formatStatus = (status = "") =>
-  status.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  const navigate = useNavigate();
+  const { setIsLoggedIn } = useOutletContext();
 
-const ProfilePage = () => {
-  const [activeTab, setActiveTab] = useState("profile");
+  const menuItems = [
+    {
+      title: "My Cart",
+      description: "View your shopping cart",
+      count: cartItems.length,
+      icon: "🛒",
+      path: "/cart",
+    },
+    {
+      title: "My Orders",
+      description: "Track and manage orders",
+      count: orders.length,
+      icon: "📦",
+      path: "/orders",
+    },
+    {
+      title: "My Products",
+      description: "View your purchased products",
+      count: purchasedProducts.length,
+      icon: "🥬",
+      path: "/my-products",
+    },
+    {
+      title: "My Bills",
+      description: "View your billing history",
+      count: bills.length,
+      icon: "🧾",
+      path: "/bills",
+    },
+  ];
 
-  const [profile, setProfile] = useState({});
-  const [addresses, setAddresses] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const fullName =
+    user?.firstName
+      ? `${user.firstName} ${user.lastName || ""}`
+      : user?.name || "ScazStore Customer";
 
-  const [selectedOrder, setSelectedOrder] = useState(null);
+  const initial = fullName.charAt(0).toUpperCase();
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const handleLogout = async () => {
+  try {
+    localStorage.removeItem("accessToken");
 
-  // Load account information
-  const loadAccount = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError("");
+    setIsLoggedIn(false);
 
-      const [profileData, addressData, orderData] =
-        await Promise.all([
-          getProfile(),
-          getAddresses(),
-          getMyOrders(),
-        ]);
-
-      setProfile(profileData.user || profileData);
-      setAddresses(
-        addressData.addresses || addressData || []
-      );
-      setOrders(orderData.orders || orderData || []);
-
-    } catch (err) {
-      setError(err.message || "Unable to load account.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    const timerId = window.setTimeout(() => {
-      loadAccount();
-    }, 0);
-
-    return () => window.clearTimeout(timerId);
-  }, [loadAccount]);
-
-  // Edit profile fields
-  const handleProfileChange = (e) => {
-    const { name, value } = e.target;
-
-    setProfile((previous) => ({
-      ...previous,
-      [name]: value,
-    }));
-  };
-
-  // Save profile
-  const handleSaveProfile = async (e) => {
-    e.preventDefault();
-
-    try {
-      setSaving(true);
-      setMessage("");
-
-      const result = await updateProfile({
-        name: profile.name,
-        email: profile.email,
-        phone: profile.phone,
-      });
-
-      setProfile(result.user || result);
-
-      setMessage("Profile updated successfully!");
-    } catch (err) {
-      setMessage(err.message || "Unable to update profile.");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  // Save parcel receiver information
-  const handleReceiverUpdate = async (orderId, details) => {
-    try {
-      await updateReceiverDetails(orderId, details);
-
-      setMessage("Receiver details updated successfully!");
-
-      await loadAccount();
-    } catch (err) {
-      setMessage(err.message || "Unable to update receiver details.");
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="h-12 w-12 animate-spin rounded-full border-4 border-green-100 border-t-green-600" />
-      </div>
-    );
+    navigate("/login", { replace: true });
+  } catch (error) {
+    console.error("Logout failed:", error);
   }
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-xl px-4 py-20 text-center">
-        <p className="text-red-600">{error}</p>
-
-        <button
-          onClick={loadAccount}
-          className="mt-4 rounded-lg bg-green-600 px-5 py-2 text-white"
-        >
-          Try Again
-        </button>
-      </div>
-    );
-  }
+};
 
   return (
-    <main className="min-h-screen bg-gray-50 px-3 py-8 sm:px-6">
+    <div className="min-h-screen bg-gray-50 px-4 py-8 sm:px-6 lg:px-10">
 
-      <div className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-6xl">
 
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-black text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900">
             My Account
           </h1>
-
-          <p className="mt-2 text-sm text-gray-500">
-            Manage your profile, addresses and orders.
+          <p className="mt-1 text-sm text-gray-500">
+            Manage your profile and shopping activities.
           </p>
         </div>
 
-        {/* Profile Header */}
-        <div className="mb-6 flex flex-wrap items-center gap-4 rounded-2xl bg-white p-5 shadow-sm">
+        {/* Profile Card */}
+        <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
-          <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-green-100 text-3xl">
-            {profile.profileImage ? (
-              <img
-                src={profile.profileImage}
-                alt="Profile"
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              "👤"
-            )}
-          </div>
+          <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-center">
 
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">
-              {profile.name || "Customer"}
-            </h2>
+            <div className="flex items-center gap-4">
 
-            <p className="text-sm text-gray-500">
-              {profile.email}
-            </p>
+              {/* Avatar */}
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-green-100 text-2xl font-bold text-green-700">
+                {initial}
+              </div>
 
-            <p className="text-xs text-gray-400">
-              Customer ID: {profile._id || "—"}
-            </p>
-          </div>
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {fullName}
+                </h2>
 
-        </div>
+                <p className="mt-1 text-sm text-gray-500">
+                  {user?.email || "Email not available"}
+                </p>
 
-        {/* Tabs */}
-        <div className="mb-6 flex gap-2 overflow-x-auto rounded-xl bg-white p-2 shadow-sm">
+                <span className="mt-2 inline-block rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                  Customer Account
+                </span>
+              </div>
+            </div>
 
-          {TABS.map((tab) => (
+            {/* IMPORTANT: Edit Button */}
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex shrink-0 items-center gap-2 rounded-lg px-5 py-3 text-sm font-bold transition ${
-                activeTab === tab.id
-                  ? "bg-green-600 text-white"
-                  : "text-gray-600 hover:bg-green-50"
-              }`}
+              onClick={() => navigate("/profile/edit")}
+              className="rounded-xl bg-green-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-green-700 active:scale-95"
             >
-              <span>{tab.icon}</span>
-              {tab.label}
+              Edit Profile →
             </button>
-          ))}
 
+          </div>
         </div>
 
-        {/* Profile Tab */}
-        {activeTab === "profile" && (
-          <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-8">
+        {/* Personal Information */}
+        <section className="mt-8">
 
-            <h2 className="mb-6 text-xl font-bold">
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">
               Personal Information
             </h2>
 
-            <form
-              onSubmit={handleSaveProfile}
-              className="grid gap-5 sm:grid-cols-2"
+            <button
+              onClick={() => navigate("/profile/edit")}
+              className="text-sm font-semibold text-green-600 hover:text-green-700"
             >
+              Edit Details
+            </button>
+          </div>
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Full Name
-                </label>
+          <div className="grid grid-cols-1 gap-4 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm sm:grid-cols-2">
 
-                <input
-                  name="name"
-                  value={profile.name || ""}
-                  onChange={handleProfileChange}
-                  required
-                  className="w-full rounded-lg border p-3 outline-none focus:border-green-500"
-                />
-              </div>
+            <InfoItem
+              label="First Name"
+              value={user?.firstName}
+            />
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Email Address
-                </label>
+            <InfoItem
+              label="Last Name"
+              value={user?.lastName}
+            />
 
-                <input
-                  type="email"
-                  name="email"
-                  value={profile.email || ""}
-                  onChange={handleProfileChange}
-                  required
-                  className="w-full rounded-lg border p-3 outline-none focus:border-green-500"
-                />
-              </div>
+            <InfoItem
+              label="Email Address"
+              value={user?.email}
+            />
 
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Mobile Number
-                </label>
+            <InfoItem
+              label="Phone Number"
+              value={user?.mobile}
+            />
 
-                <input
-                  type="tel"
-                  name="phone"
-                  value={profile.phone || ""}
-                  onChange={handleProfileChange}
-                  required
-                  className="w-full rounded-lg border p-3 outline-none focus:border-green-500"
-                />
-              </div>
+            <InfoItem
+              label="Secondary Phone"
+              value={user?.secondryMobile}
+            />
 
-              <div className="sm:col-span-2">
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="rounded-lg bg-green-600 px-7 py-3 font-bold text-white hover:bg-green-700 disabled:opacity-50"
-                >
-                  {saving ? "Saving..." : "Save Changes"}
-                </button>
-              </div>
+            <InfoItem
+              label="Pincode"
+              value={user?.deliveryAddress?.pincode}
+            />
 
-            </form>
-
-          </section>
-        )}
-
-        {/* Address Tab */}
-        {activeTab === "addresses" && (
-          <section className="rounded-2xl bg-white p-5 shadow-sm sm:p-8">
-
-            <div className="mb-6 flex items-center justify-between gap-3">
-
-              <h2 className="text-xl font-bold">
-                My Delivery Addresses
-              </h2>
-
-              <button
-                onClick={() => setMessage("Connect your Add Address form here.")}
-                className="rounded-lg bg-green-600 px-4 py-2 text-sm font-bold text-white"
-              >
-                + Add Address
-              </button>
-
+            <div className="sm:col-span-2">
+              <InfoItem
+                label="Delivery Address"
+                value={user?.deliveryAddress?.fullAddress}
+              />
             </div>
 
-            {addresses.length === 0 ? (
-              <p className="py-10 text-center text-gray-500">
-                No saved addresses.
-              </p>
-            ) : (
-              <div className="grid gap-4 sm:grid-cols-2">
+          </div>
+        </section>
 
-                {addresses.map((address) => (
+        {/* Shopping Dashboard */}
+        <section className="mt-10">
+
+          <h2 className="mb-4 text-lg font-bold text-gray-900">
+            My Shopping
+          </h2>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+
+            {menuItems.map((item) => (
+              <button
+                key={item.title}
+                onClick={() => navigate(item.path)}
+                className="group rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm transition hover:-translate-y-1 hover:border-green-200 hover:shadow-md"
+              >
+
+                <div className="flex items-center justify-between">
+
+                  <span className="text-3xl">
+                    {item.icon}
+                  </span>
+
+                  <span className="rounded-full bg-green-50 px-3 py-1 text-sm font-semibold text-green-700">
+                    {item.count}
+                  </span>
+
+                </div>
+
+                <h3 className="mt-5 font-bold text-gray-900">
+                  {item.title}
+                </h3>
+
+                <p className="mt-1 text-xs text-gray-500">
+                  {item.description}
+                </p>
+
+                <p className="mt-4 text-sm font-semibold text-green-600">
+                  View Details →
+                </p>
+
+              </button>
+            ))}
+
+          </div>
+        </section>
+
+        {/* Recent Orders */}
+        <section className="mt-10">
+
+          <div className="mb-4 flex items-center justify-between">
+            <h2 className="text-lg font-bold text-gray-900">
+              Recent Orders
+            </h2>
+
+            <button
+              onClick={() => navigate("/orders")}
+              className="text-sm font-semibold text-green-600"
+            >
+              View All →
+            </button>
+          </div>
+
+          <div className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">
+
+            {orders.length > 0 ? (
+              <div className="divide-y divide-gray-100">
+
+                {orders.slice(0, 4).map((order) => (
                   <div
-                    key={address._id}
-                    className="rounded-xl border border-gray-200 p-5"
+                    key={order._id}
+                    className="flex flex-wrap items-center justify-between gap-3 p-5"
                   >
+                    <div>
+                      <p className="font-semibold text-gray-900">
+                        Order #{order._id?.slice(-8)}
+                      </p>
 
-                    <div className="mb-3 flex justify-between">
-                      <h3 className="font-bold">
-                        📍 {address.label || "Home"}
-                      </h3>
-
-                      {address.isDefault && (
-                        <span className="text-xs font-bold text-green-600">
-                          DEFAULT
-                        </span>
-                      )}
+                      <p className="mt-1 text-xs text-gray-500">
+                        {order.createdAt
+                          ? new Date(order.createdAt).toLocaleDateString()
+                          : "Date unavailable"}
+                      </p>
                     </div>
 
-                    <p className="text-sm leading-6 text-gray-600">
-                      {address.house},
-                      {" "}{address.area},
-                      {" "}{address.landmark},
-                      {" "}{address.city},
-                      {" "}{address.state} -
-                      {" "}{address.pincode}
-                    </p>
+                    <div className="text-right">
+                      <p className="font-semibold text-gray-900">
+                        ₹{order.totalAmount ?? order.total ?? 0}
+                      </p>
 
-                    <p className="mt-3 text-sm text-gray-500">
-                      {address.phone}
-                    </p>
-
+                      <span className="mt-1 inline-block rounded-full bg-green-50 px-3 py-1 text-xs font-medium text-green-700">
+                        {order.status || "Processing"}
+                      </span>
+                    </div>
                   </div>
                 ))}
 
               </div>
-            )}
-
-          </section>
-        )}
-
-        {/* Orders Tab */}
-        {activeTab === "orders" && (
-          <section>
-
-            <h2 className="mb-5 text-xl font-bold">
-              My Orders ({orders.length})
-            </h2>
-
-            {orders.length === 0 ? (
-              <div className="rounded-2xl bg-white py-16 text-center shadow-sm">
-                <p className="text-5xl">📦</p>
-
-                <h3 className="mt-4 font-bold">
-                  No Orders Yet
-                </h3>
-
-                <p className="mt-2 text-sm text-gray-500">
-                  Your orders will appear here.
-                </p>
-              </div>
             ) : (
-              <div className="space-y-5">
+              <div className="p-10 text-center">
+                <span className="text-4xl">📦</span>
+                <p className="mt-3 font-semibold text-gray-800">
+                  No orders yet
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Your recent orders will appear here.
+                </p>
 
-                {orders.map((order) => (
-                  <article
-                    key={order._id}
-                    className="rounded-2xl bg-white p-5 shadow-sm"
-                  >
-
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4">
-
-                      <div>
-                        <p className="text-xs text-gray-400">
-                          ORDER ID
-                        </p>
-
-                        <h3 className="font-bold">
-                          #{order.orderNumber || order._id}
-                        </h3>
-
-                        <p className="mt-1 text-xs text-gray-500">
-                          {new Date(order.createdAt).toLocaleDateString("en-IN")}
-                        </p>
-                      </div>
-
-                      <span className="rounded-full bg-green-100 px-3 py-2 text-xs font-bold text-green-700">
-                        {formatStatus(order.status)}
-                      </span>
-
-                    </div>
-
-                    {/* Products */}
-                    <div className="my-4 space-y-3">
-
-                      {(order.items || []).map((item) => (
-                        <div
-                          key={item.productId || item._id}
-                          className="flex items-center gap-3"
-                        >
-
-                          <img
-                            src={item.image}
-                            alt={item.name}
-                            className="h-16 w-16 rounded-lg bg-gray-50 object-contain"
-                          />
-
-                          <div className="flex-1">
-                            <p className="text-sm font-bold">
-                              {item.name}
-                            </p>
-
-                            <p className="text-xs text-gray-500">
-                              Quantity: {item.quantity}
-                            </p>
-                          </div>
-
-                          <p className="text-sm font-bold">
-                            ₹{item.price * item.quantity}
-                          </p>
-
-                        </div>
-                      ))}
-
-                    </div>
-
-                    {/* Delivery summary */}
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-4">
-
-                      <div>
-                        <p className="text-xs text-gray-400">
-                          TOTAL AMOUNT
-                        </p>
-
-                        <p className="text-xl font-black text-green-700">
-                          ₹{order.totalAmount}
-                        </p>
-                      </div>
-
-                      <button
-                        onClick={() =>
-                          setSelectedOrder(
-                            selectedOrder?._id === order._id
-                              ? null
-                              : order
-                          )
-                        }
-                        className="rounded-lg bg-green-600 px-5 py-3 text-sm font-bold text-white hover:bg-green-700"
-                      >
-                        {selectedOrder?._id === order._id
-                          ? "Hide Details"
-                          : "Track Order →"}
-                      </button>
-
-                    </div>
-
-                    {/* Expanded tracking */}
-                    {selectedOrder?._id === order._id && (
-                      <OrderTracking
-                        order={order}
-                        onReceiverUpdate={handleReceiverUpdate}
-                      />
-                    )}
-
-                  </article>
-                ))}
-
+                <button
+                  onClick={() => navigate("/products")}
+                  className="mt-4 rounded-lg bg-green-600 px-5 py-2 text-sm font-semibold text-white hover:bg-green-700"
+                >
+                  Start Shopping
+                </button>
               </div>
             )}
 
-          </section>
-        )}
-
-        {/* Notification */}
-        {message && (
-          <div
-            role="status"
-            className="fixed bottom-5 left-1/2 z-50 -translate-x-1/2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white shadow-xl"
-          >
-            {message}
-            <button
-              onClick={() => setMessage("")}
-              className="ml-4"
-            >
-              ✕
-            </button>
           </div>
-        )}
+        </section>
 
-      </div>
-    </main>
-  );
-};
+        {/* Account Settings */}
+        <section className="mt-10 rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
 
+          <h2 className="font-bold text-gray-900">
+            Account Settings
+          </h2>
 
-// Order Tracking Component
-const OrderTracking = ({ order, onReceiverUpdate }) => {
-  const [editingReceiver, setEditingReceiver] = useState(false);
-
-  const [receiver, setReceiver] = useState({
-    name: order.receiver?.name || "",
-    phone: order.receiver?.phone || "",
-  });
-
-  const currentStep = ORDER_STEPS.indexOf(order.status);
-
-  const delivery = order.delivery || {};
-  const receiverEditable = [
-    "placed",
-    "confirmed",
-    "packed",
-  ].includes(order.status);
-
-  return (
-    <div className="mt-6 space-y-6 border-t pt-6">
-
-      {/* Estimated Delivery */}
-      <div className="rounded-xl bg-green-50 p-5">
-
-        <p className="text-xs font-bold uppercase text-green-700">
-          Expected Delivery
-        </p>
-
-        <h3 className="mt-2 text-2xl font-black text-green-900">
-          {delivery.estimatedDate
-            ? new Date(delivery.estimatedDate).toLocaleDateString("en-IN")
-            : "Awaiting confirmation"}
-        </h3>
-
-        <p className="mt-1 text-sm text-green-800">
-          {delivery.estimatedTime || "Delivery time will be updated."}
-        </p>
-
-      </div>
-
-      {/* Tracking Timeline */}
-      <div>
-        <h3 className="mb-5 font-bold">
-          Order Tracking
-        </h3>
-
-        <div className="space-y-5">
-
-          {ORDER_STEPS.map((step, index) => {
-            const completed =
-              currentStep >= index && currentStep !== -1;
-
-            return (
-              <div
-                key={step}
-                className="flex items-start gap-4"
-              >
-
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                    completed
-                      ? "bg-green-600 text-white"
-                      : "bg-gray-200 text-gray-500"
-                  }`}
-                >
-                  {completed ? "✓" : index + 1}
-                </div>
-
-                <div>
-                  <p className={`font-bold ${
-                    completed ? "text-green-700" : "text-gray-500"
-                  }`}>
-                    {formatStatus(step)}
-                  </p>
-
-                  {order.trackingEvents?.find(
-                    (event) => event.status === step
-                  ) && (
-                    <p className="mt-1 text-xs text-gray-400">
-                      {new Date(
-                        order.trackingEvents.find(
-                          (event) => event.status === step
-                        ).timestamp
-                      ).toLocaleString("en-IN")}
-                    </p>
-                  )}
-                </div>
-
-              </div>
-            );
-          })}
-
-        </div>
-      </div>
-
-      {/* Delivery Person */}
-      {delivery.personName && (
-        <div className="rounded-xl border p-5">
-
-          <h3 className="mb-4 font-bold">
-            🚚 Delivery Partner
-          </h3>
-
-          <p className="font-semibold">
-            {delivery.personName}
-          </p>
-
-          <p className="mt-1 text-sm text-gray-500">
-            {delivery.phone}
-          </p>
-
-          {delivery.phone && (
-            <a
-              href={`tel:${delivery.phone}`}
-              className="mt-4 inline-block rounded-lg bg-green-600 px-5 py-2 text-sm font-bold text-white"
-            >
-              📞 Call Delivery Partner
-            </a>
-          )}
-
-        </div>
-      )}
-
-      {/* Parcel Receiver */}
-      <div className="rounded-xl border p-5">
-
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h3 className="font-bold">
-            📦 Parcel Receiver Details
-          </h3>
-
-          {receiverEditable && (
-            <button
-              onClick={() => setEditingReceiver(!editingReceiver)}
-              className="text-sm font-bold text-green-600"
-            >
-              {editingReceiver ? "Cancel" : "Edit"}
-            </button>
-          )}
-        </div>
-
-        {editingReceiver ? (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onReceiverUpdate(order._id, receiver);
-              setEditingReceiver(false);
-            }}
-            className="space-y-3"
+          <button
+            onClick={() => navigate("/profile/edit")}
+            className="mt-5 flex w-full items-center justify-between border-b border-gray-100 py-4 text-left"
           >
+            <div>
+              <p className="font-medium text-gray-800">
+                Edit Personal Information
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Update your name, phone and delivery address.
+              </p>
+            </div>
+            <span className="text-gray-400">→</span>
+          </button>
 
-            <input
-              value={receiver.name}
-              onChange={(e) =>
-                setReceiver({
-                  ...receiver,
-                  name: e.target.value,
-                })
-              }
-              placeholder="Receiver Name"
-              required
-              className="w-full rounded-lg border p-3"
-            />
+          <button
+            onClick={() => navigate("/orders")}
+            className="flex w-full items-center justify-between py-4 text-left"
+          >
+            <div>
+              <p className="font-medium text-gray-800">
+                Order History
+              </p>
+              <p className="mt-1 text-xs text-gray-500">
+                Check your previous purchases.
+              </p>
+            </div>
+            <span className="text-gray-400">→</span>
+          </button>
+          <button
+  onClick={handleLogout}
+  className="rounded-lg bg-red-600 px-5 py-2 text-white hover:bg-red-700 transition"
+>
+  Logout
+</button>
 
-            <input
-              type="tel"
-              value={receiver.phone}
-              onChange={(e) =>
-                setReceiver({
-                  ...receiver,
-                  phone: e.target.value,
-                })
-              }
-              placeholder="Receiver Mobile"
-              required
-              className="w-full rounded-lg border p-3"
-            />
-
-            <button
-              type="submit"
-              className="rounded-lg bg-green-600 px-5 py-2 font-bold text-white"
-            >
-              Save Receiver Details
-            </button>
-
-          </form>
-        ) : (
-          <>
-            <p className="font-semibold">
-              {order.receiver?.name || "Not provided"}
-            </p>
-
-            <p className="mt-1 text-sm text-gray-500">
-              {order.receiver?.phone || "No contact number"}
-            </p>
-
-            <p className="mt-3 text-sm leading-6 text-gray-500">
-              {order.deliveryAddress?.house},
-              {" "}{order.deliveryAddress?.area},
-              {" "}{order.deliveryAddress?.city},
-              {" "}{order.deliveryAddress?.state} -
-              {" "}{order.deliveryAddress?.pincode}
-            </p>
-          </>
-        )}
+        </section>
 
       </div>
-
-      {/* Payment */}
-      <div className="rounded-xl bg-gray-50 p-4">
-
-        <h3 className="font-bold">
-          Payment Information
-        </h3>
-
-        <p className="mt-2 text-sm text-gray-600">
-          Payment Method: {order.paymentMethod || "—"}
-        </p>
-
-        <p className="mt-1 text-sm text-gray-600">
-          Payment Status: {formatStatus(order.paymentStatus)}
-        </p>
-
-      </div>
-
     </div>
   );
 };
+
+// Reusable information component
+const InfoItem = ({ label, value }) => (
+  <div>
+    <p className="text-xs font-medium uppercase tracking-wide text-gray-400">
+      {label}
+    </p>
+
+    <p className="mt-2 break-words text-sm font-medium text-gray-800">
+      {value || "Not provided"}
+    </p>
+  </div>
+);
 
 export default ProfilePage;

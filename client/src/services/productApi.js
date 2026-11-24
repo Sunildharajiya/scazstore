@@ -1,35 +1,103 @@
 
 const API_URL = (
+<<<<<<< HEAD
   import.meta.env.VITE_API_BASE_URL ||
+<<<<<<< HEAD
   "http://localhost:5000/api/product"
+=======
+  "http://localhost:5000/api"
+=======
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"
+>>>>>>> c56f5df (fixing profile route)
+>>>>>>> f93616a (fixing things & new addition)
 ).replace(/\/+$/, "");
 
-// Handle API responses
-const handleResponse = async (response) => {
+// Product endpoint
+const PRODUCT_ENDPOINT = `${API_URL}/product/products`;
+
+// Browser debugging alert
+const showApiAlert = (title, details) => {
+  if (typeof window === "undefined") return;
+
+  window.alert(
+    `${title}\n\n${details}`
+  );
+};
+
+// Fetch API
+const fetchApi = async (url, options = {}) => {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    showApiAlert(
+      "ScazStore API: Connection Failed",
+      `URL: ${url}\nError: ${error.message}`
+    );
+
+    throw new Error(
+      "Could not connect to the ScazStore server. Check that the backend is running."
+    );
+  }
+};
+
+// Handle backend response
+const handleResponse = async (response, url = "Unknown URL") => {
+  const contentType = response.headers.get("content-type") || "";
+
   let data;
 
-  try {
-    data = await response.json();
-  } catch {
-    throw new Error("Invalid server response.");
+  if (contentType.includes("application/json")) {
+    data = await response.json().catch(() => null);
+  } else {
+    const message = await response.text().catch(() => "");
+    data = message ? { message } : null;
   }
 
   if (!response.ok) {
     throw new Error(
-      data?.message || `Request failed: ${response.status}`
+      data?.message ||
+      data?.error ||
+      `Request failed with status ${response.status}.`
+    );
+  }
+
+  if (data == null) {
+    throw new Error(
+      "The server returned an empty or invalid response."
+    );
+  }
+
+  if (data.success === false) {
+    throw new Error(
+      data.message || "The request was not successful."
     );
   }
 
   return data;
 };
 
-// Fetch products by section
-export const getProducts = async ({
+// Extract products from different response structures
+const extractProducts = (data) => {
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.products)) return data.products;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.data?.products)) return data.data.products;
+  if (Array.isArray(data?.result?.products)) return data.result.products;
+
+  return [];
+};
+
+// Build query parameters
+const buildProductQuery = ({
   section,
   limit = 8,
   category = "",
+  search = "",
+  sort,
+  page,
   latitude,
   longitude,
+<<<<<<< HEAD
 } = {}) => {
   const params = new URLSearchParams();
 
@@ -88,40 +156,107 @@ export const getCategoryProducts = async ({
   sort = "newest",
   page = 1,
   limit = 12,
+=======
+>>>>>>> c56f5df (fixing profile route)
   minPrice,
   maxPrice,
 } = {}) => {
   const params = new URLSearchParams();
 
-  if (category) params.append("category", category);
-  if (search) params.append("search", search);
+  if (section) params.set("section", section);
+  if (category) params.set("category", category);
+  if (search) params.set("search", search);
+  if (sort) params.set("sort", sort);
+  if (page != null) params.set("page", String(page));
+  if (limit != null) params.set("limit", String(limit));
 
-  params.append("sort", sort);
-  params.append("page", String(page));
-  params.append("limit", String(limit));
+  if (latitude != null && longitude != null) {
+    params.set("latitude", String(latitude));
+    params.set("longitude", String(longitude));
+  }
 
   if (minPrice !== undefined && minPrice !== "") {
-    params.append("minPrice", String(minPrice));
+    params.set("minPrice", String(minPrice));
   }
 
   if (maxPrice !== undefined && maxPrice !== "") {
-    params.append("maxPrice", String(maxPrice));
+    params.set("maxPrice", String(maxPrice));
   }
 
-  const response = await fetch(
-    `${API_URL}/products?${params.toString()}`
-  );
+  return params.toString();
+};
 
-  const data = await handleResponse(response);
+// Fetch homepage products
+export const getProducts = async (options = {}) => {
+  const query = buildProductQuery(options);
+
+  const url = `${PRODUCT_ENDPOINT}${query ? `?${query}` : ""}`;
+
+  const response = await fetchApi(url);
+
+  const data = await handleResponse(response, url);
+
+  return extractProducts(data);
+};
+
+// Add product to cart
+export const addProductToCart = async (productId, quantity = 1) => {
+  if (!productId) {
+    throw new Error("A valid product ID is required.");
+  }
+
+  const url = `${API_URL}/cart/items`;
+
+  const response = await fetchApi(url, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ productId, quantity }),
+  });
+
+  return handleResponse(response, url);
+};
+
+// Fetch category products
+export const getCategoryProducts = async (options = {}) => {
+  const query = buildProductQuery({
+    limit: 12,
+    sort: "newest",
+    page: 1,
+    ...options,
+  });
+
+  const url = `${PRODUCT_ENDPOINT}${query ? `?${query}` : ""}`;
+
+  const response = await fetchApi(url);
+
+  const data = await handleResponse(response, url);
+
+  const nested =
+    data?.data && !Array.isArray(data.data)
+      ? data.data
+      : data;
 
   return {
-    products: Array.isArray(data)
-      ? data
-      : Array.isArray(data.products)
-      ? data.products
-      : [],
+    products: extractProducts(data),
 
-    totalPages: data.totalPages || 1,
-    totalProducts: data.totalProducts || 0,
+    totalPages: Math.max(
+      1,
+      Number(nested?.totalPages || data?.totalPages || 1)
+    ),
+
+    totalProducts: Math.max(
+      0,
+      Number(nested?.totalProducts || data?.totalProducts || 0)
+    ),
+
+    currentPage: Number(
+      nested?.currentPage ||
+      data?.currentPage ||
+      options.page ||
+      1
+    ),
   };
 };

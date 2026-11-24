@@ -29,19 +29,13 @@ const productSchema = new Schema(
 
     // Classification
     category: {
-      type: String,
+      type: [String],
       required: true,
       lowercase: true,
       trim: true,
       index: true,
     },
-
-    sections: {
-      type: [String],
-      default: [],
-      index: true,
-    },
-
+    
     tags: {
       type: [String],
       default: [],
@@ -135,13 +129,6 @@ const productSchema = new Schema(
         type: [Number],
         default: undefined,
       },
-    },
-
-    // Ownership
-    sellerId: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
     },
   },
   {

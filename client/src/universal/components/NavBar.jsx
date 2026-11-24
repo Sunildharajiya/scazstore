@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import Logo from "../../assets/images/scazstore-logo.png";
 
 const Nav = ({ isLoggedIn = false, notificationCount = 0 }) => {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -59,9 +60,9 @@ const Nav = ({ isLoggedIn = false, notificationCount = 0 }) => {
 
     if (!search.trim()) return;
 
-    console.log("Searching:", search.trim());
-
-    // Connect search API here
+    navigate(`/products?search=${encodeURIComponent(search.trim())}`);
+    setSearchOpen(false);
+    setMenuOpen(false);
   };
 
   return (

@@ -169,7 +169,7 @@ These are intentional integration points or unfinished features in the current d
 
 - Add-to-cart calls `POST /cart/items`.
 - The shared cart state/count is not implemented yet. The `cart-updated` custom event is only a notification hook.
-- Add cart retrieval, quantity updates, removal, stock checks, and server-side price calculation.
+- The product cards keep Add to Cart disabled until `POST /cart/items` is implemented. Add cart retrieval, quantity updates, removal, stock checks, and server-side price calculation before enabling it.
 
 ### Offers
 
@@ -180,7 +180,7 @@ These are intentional integration points or unfinished features in the current d
 ### Profile and orders
 
 - Profile read/update and order list calls are wired to `accountApi.js`.
-- The address list is displayed, but the Add Address button is currently a placeholder. Build a validated add/edit address form and connect it to `addAddress` / `updateAddress`.
+- The address list and Add Address form are connected to `POST /me/addresses`. The frontend submits `label`, `house`, `area`, `landmark`, `city`, `state`, `pincode`, and `phone`; make sure the backend validates and accepts this shape. Address editing and default-address selection are not implemented yet.
 - The tracking view displays tracking data returned with the order. `getOrderTracking` is available in the service but the page does not yet poll or subscribe to it for live updates.
 - Receiver editing is a UI integration point. The backend must verify order ownership and enforce the allowed order statuses.
 - Delivery partner phone details should only be returned to the customer assigned to that active delivery. Consider masking or hiding the number after delivery.
@@ -190,7 +190,7 @@ These are intentional integration points or unfinished features in the current d
 
 - Contact and newsletter forms currently demonstrate UI behavior only; they do not submit to a service.
 - Footer social links are placeholders until the official account URLs are configured.
-- Search currently logs the query in the browser and needs a search route/API integration.
+- Navbar search navigates to the category listing with a `search` query parameter; the category listing sends it to `GET /products`.
 
 ### Policies and legal copy
 

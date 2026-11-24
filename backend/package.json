@@ -1,13 +1,15 @@
 {
   "name": "scazestore",
   "version": "1.0.0",
-  "description": "",
+  "description": "ScazStore backend API",
   "license": "ISC",
   "author": "sunil dharajiya",
   "type": "module",
   "main": "src/index.js",
   "scripts": {
-    "test": "npx nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "start": "node src/index.js",
+    "test": "node --test"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

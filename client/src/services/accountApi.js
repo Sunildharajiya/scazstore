@@ -2,19 +2,25 @@ const API_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const request = async (endpoint, options = {}) => {
-  const response = await fetch(`${API_URL}${endpoint}`, {
-    credentials: "include",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  let response;
+
+  try {
+    response = await fetch(`${API_URL}${endpoint}`, {
+      credentials: "include",
+      ...options,
+      headers: {
+        ...(options.body ? { "Content-Type": "application/json" } : {}),
+        ...options.headers,
+      },
+    });
+  } catch {
+    throw new Error("Could not connect to the ScazStore server. Check that the backend is running.");
+  }
 
   const data = await response.json().catch(() => ({}));
 
-  if (!response.ok) {
-    throw new Error(data.message || "Something went wrong.");
+  if (!response.ok || data?.success === false) {
+    throw new Error(data.message || `Request failed with status ${response.status}.`);
   }
 
   return data;
@@ -22,18 +28,18 @@ const request = async (endpoint, options = {}) => {
 
 // Get logged-in user profile
 export const getProfile = () =>
-  request("/me/profile");
+  request("/users/profile");
 
 // Update profile
 export const updateProfile = (profile) =>
-  request("/me/profile", {
+  request("/users/profileUpdate", {
     method: "PATCH",
     body: JSON.stringify(profile),
   });
 
 // Get customer addresses
 export const getAddresses = () =>
-  request("/me/addresses");
+  request("/users/address");
 
 // Add address
 export const addAddress = (address) =>

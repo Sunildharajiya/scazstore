@@ -1,20 +1,26 @@
+
+import { useState } from "react";
 import { Outlet } from "react-router-dom";
 
-import NavBar from "../components/NavBar.jsx";
+import Nav from "../components/NavBar.jsx";
 import SiteFooter from "../components/SiteFooter.jsx";
 import DemoNotice from "../components/DemoNotice.jsx";
 
-export const RootLayout = () => (
-  <div className="flex min-h-screen flex-col">
-    <NavBar />
+export const RootLayout = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState(
+    !!localStorage.getItem("accessToken")
+  );
 
-    <main className="flex-1">
-      <Outlet />
-    </main>
+  return (
+    <div className="flex min-h-screen flex-col">
+      <Nav isLoggedIn={isLoggedIn} />
 
-    <SiteFooter />
+      <main className="flex-1">
+        <Outlet context={{ setIsLoggedIn }} />
+      </main>
 
-    {/* Keep the demo disclaimer available across every route. */}
-    <DemoNotice />
-  </div>
-);
+      <SiteFooter />
+      <DemoNotice />
+    </div>
+  );
+};

@@ -198,27 +198,8 @@ const OffersPage = () => {
       console.error("Offer tracking failed:", err);
     }
 
-    if (offer.redirectUrl) {
-      // Only allow trusted web URLs.
-      try {
-        const url = new URL(offer.redirectUrl);
-
-        if (["https:", "http:"].includes(url.protocol)) {
-          window.location.assign(url.href);
-          return;
-        }
-      } catch {
-        // Fall back to the product page.
-      }
-    }
-
-    if (offer.productId) {
-      navigate(`/product/${offer.productId}`);
-    } else if (offer.shopId) {
-      navigate(`/shop/${offer.shopId}`);
-    } else {
-      navigate("/products");
-    }
+    // Product-detail and shop routes are not implemented yet.
+    navigate("/products");
   };
 
   const renderSection = (title, subtitle, items, icon) => (
@@ -333,12 +314,12 @@ const OffersPage = () => {
                 setActiveCategory(
                   category === "All"
                     ? "all"
-                    : category.toLowerCase()
+                    : category === "Daily Needs" ? "daily-needs" : category.toLowerCase()
                 )
               }
               className={`shrink-0 rounded-lg border px-4 py-2 text-xs font-semibold transition ${
                 activeCategory ===
-                (category === "All" ? "all" : category.toLowerCase())
+                (category === "All" ? "all" : category === "Daily Needs" ? "daily-needs" : category.toLowerCase())
                   ? "border-green-600 bg-green-50 text-green-700"
                   : "border-gray-200 bg-white text-gray-600"
               }`}

@@ -1,6 +1,5 @@
-
 import express from "express";
-import { Product } from "../../../src/db/models/products.model.js";
+import { Product } from "../../db/models/products.model.js";
 
 export const createProductRouter = express.Router();
 
@@ -20,41 +19,43 @@ createProductRouter.post("/", async (req, res) => {
       stock,
       sku,
       location,
-      sellerId,
     } = req.body || {};
 
-    // Required fields
-    if (
-      !name ||
-      !slug ||
-      !description ||
-      !category ||
-      price === undefined ||
-      !sellerId ||
-      !images?.length
-    ) {
+    // Validate required fields before asking Mongoose to create the document.
+    const missingFields = [];
+    if (typeof name !== "string" || !name.trim()) missingFields.push("name");
+    if (typeof slug !== "string" || !slug.trim()) missingFields.push("slug");
+    if (typeof description !== "string" || !description.trim()) missingFields.push("description");
+    if (typeof category !== "string" || !category.trim()) missingFields.push("category");
+    if (price === undefined || price === null || price === "" || !Number.isFinite(Number(price))) {
+      missingFields.push("price");
+    }
+    if (!Array.isArray(images) || images.length === 0) missingFields.push("images");
+
+    if (missingFields.length) {
       return res.status(400).json({
         success: false,
-        message: "Missing required product fields.",
+        message: "Missing or invalid required product fields.",
+        fields: missingFields,
       });
     }
 
-    // Create product
     const product = await Product.create({
-      name,
-      slug,
-      description,
-      category,
-      sections: sections || [],
-      tags: tags || [],
-      price,
-      compareAtPrice,
+      name: name.trim(),
+      slug: slug.trim().toLowerCase(),
+      description: description.trim(),
+      category: category.trim().toLowerCase(),
+      sections: Array.isArray(sections) ? sections : [],
+      tags: Array.isArray(tags) ? tags : [],
+      price: Number(price),
+      compareAtPrice: compareAtPrice === "" || compareAtPrice == null
+        ? null
+        : Number(compareAtPrice),
       currency: currency || "INR",
       images,
-      stock: stock ?? 0,
-      sku,
+      stock: stock === undefined ? 0 : Number(stock),
+      sku: sku || undefined,
       location,
-      sellerId,
     });
 
     return res.status(201).json({
@@ -62,7 +63,6 @@ createProductRouter.post("/", async (req, res) => {
       message: "Product created successfully.",
       product,
     });
-
   } catch (error) {
     console.error("[PRODUCT:CREATE]", error);
 
@@ -70,6 +70,7 @@ createProductRouter.post("/", async (req, res) => {
       return res.status(409).json({
         success: false,
         message: "Product slug or SKU already exists.",
+        field: Object.keys(error.keyPattern || {})[0] || "unknown",
       });
     }
 

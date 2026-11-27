@@ -1,15 +1,7 @@
 
 const API_URL = (
-<<<<<<< HEAD
   import.meta.env.VITE_API_BASE_URL ||
-<<<<<<< HEAD
-  "http://localhost:5000/api/product"
-=======
   "http://localhost:5000/api"
-=======
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api"
->>>>>>> c56f5df (fixing profile route)
->>>>>>> f93616a (fixing things & new addition)
 ).replace(/\/+$/, "");
 
 // Product endpoint
@@ -19,9 +11,7 @@ const PRODUCT_ENDPOINT = `${API_URL}/product/products`;
 const showApiAlert = (title, details) => {
   if (typeof window === "undefined") return;
 
-  window.alert(
-    `${title}\n\n${details}`
-  );
+  window.alert(`${title}\n\n${details}`);
 };
 
 // Fetch API
@@ -41,7 +31,7 @@ const fetchApi = async (url, options = {}) => {
 };
 
 // Handle backend response
-const handleResponse = async (response, url = "Unknown URL") => {
+const handleResponse = async (response) => {
   const contentType = response.headers.get("content-type") || "";
 
   let data;
@@ -79,15 +69,27 @@ const handleResponse = async (response, url = "Unknown URL") => {
 // Extract products from different response structures
 const extractProducts = (data) => {
   if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.products)) return data.products;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.data?.products)) return data.data.products;
-  if (Array.isArray(data?.result?.products)) return data.result.products;
+
+  if (Array.isArray(data?.products)) {
+    return data.products;
+  }
+
+  if (Array.isArray(data?.data)) {
+    return data.data;
+  }
+
+  if (Array.isArray(data?.data?.products)) {
+    return data.data.products;
+  }
+
+  if (Array.isArray(data?.result?.products)) {
+    return data.result.products;
+  }
 
   return [];
 };
 
-// Build query parameters
+// Build product query parameters
 const buildProductQuery = ({
   section,
   limit = 8,
@@ -97,78 +99,26 @@ const buildProductQuery = ({
   page,
   latitude,
   longitude,
-<<<<<<< HEAD
-} = {}) => {
-  const params = new URLSearchParams();
-
-  if (section) params.append("section", section);
-
-  params.append("limit", String(limit));
-
-  if (category) params.append("category", category);
-
-  if (latitude != null && longitude != null) {
-    params.append("latitude", String(latitude));
-    params.append("longitude", String(longitude));
-  }
-
-  const response = await fetch(
-    `${API_URL}/products?${params.toString()}`
-  );
-
-  
-
-  const data = await handleResponse(response);
-
-console.log("[PRODUCT API] Response:", data);
-
-if (Array.isArray(data)) return data;
-
-if (Array.isArray(data.products)) {
-  return data.products;
-}
-
-throw new Error("Products array not found in API response.");
-};
-
-
-
-// Add product to cart
-export const addProductToCart = async (productId, quantity = 1) => {
-  const response = await fetch(`${API_URL}/cart/items`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      productId,
-      quantity,
-    }),
-  });
-
-  return handleResponse(response);
-};
-
-// Fetch category products with filters and pagination
-export const getCategoryProducts = async ({
-  category = "",
-  search = "",
-  sort = "newest",
-  page = 1,
-  limit = 12,
-=======
->>>>>>> c56f5df (fixing profile route)
   minPrice,
   maxPrice,
 } = {}) => {
   const params = new URLSearchParams();
 
   if (section) params.set("section", section);
+
   if (category) params.set("category", category);
+
   if (search) params.set("search", search);
+
   if (sort) params.set("sort", sort);
-  if (page != null) params.set("page", String(page));
-  if (limit != null) params.set("limit", String(limit));
+
+  if (page != null) {
+    params.set("page", String(page));
+  }
+
+  if (limit != null) {
+    params.set("limit", String(limit));
+  }
 
   if (latitude != null && longitude != null) {
     params.set("latitude", String(latitude));
@@ -187,6 +137,7 @@ export const getCategoryProducts = async ({
 };
 
 // Fetch homepage products
+// Returns: Array of products
 export const getProducts = async (options = {}) => {
   const query = buildProductQuery(options);
 
@@ -194,13 +145,20 @@ export const getProducts = async (options = {}) => {
 
   const response = await fetchApi(url);
 
-  const data = await handleResponse(response, url);
+  const data = await handleResponse(response);
 
-  return extractProducts(data);
+  const products = extractProducts(data);
+
+  console.log("[PRODUCT API] Products:", products);
+
+  return products;
 };
 
 // Add product to cart
-export const addProductToCart = async (productId, quantity = 1) => {
+export const addProductToCart = async (
+  productId,
+  quantity = 1
+) => {
   if (!productId) {
     throw new Error("A valid product ID is required.");
   }
@@ -213,13 +171,16 @@ export const addProductToCart = async (productId, quantity = 1) => {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ productId, quantity }),
+    body: JSON.stringify({
+      productId,
+      quantity,
+    }),
   });
 
-  return handleResponse(response, url);
+  return handleResponse(response);
 };
 
-// Fetch category products
+// Fetch category products with pagination
 export const getCategoryProducts = async (options = {}) => {
   const query = buildProductQuery({
     limit: 12,
@@ -232,7 +193,7 @@ export const getCategoryProducts = async (options = {}) => {
 
   const response = await fetchApi(url);
 
-  const data = await handleResponse(response, url);
+  const data = await handleResponse(response);
 
   const nested =
     data?.data && !Array.isArray(data.data)

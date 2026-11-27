@@ -1,4 +1,10 @@
 
+import {
+  getAccessToken,
+  setAccessToken,
+  clearAccessToken,
+} from "./authSession.js";
+
 const API_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
@@ -7,12 +13,17 @@ const request = async (endpoint, options = {}) => {
   let response;
 
   try {
+    const token = getAccessToken();
+
     response = await fetch(`${API_URL}${endpoint}`, {
       ...options,
       credentials: "include",
       headers: {
         ...(options.body
           ? { "Content-Type": "application/json" }
+          : {}),
+        ...(token
+          ? { Authorization: `Bearer ${token}` }
           : {}),
         ...options.headers,
       },
@@ -26,13 +37,13 @@ const request = async (endpoint, options = {}) => {
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok || data?.success === false) {
-  const errorMessage =
-    data.errors?.join(", ") ||
-    data.message ||
-    `Request failed with status ${response.status}.`;
+    const errorMessage =
+      data.errors?.join(", ") ||
+      data.message ||
+      `Request failed with status ${response.status}.`;
 
-  throw new Error(errorMessage);
-}
+    throw new Error(errorMessage);
+  }
 
   return data;
 };
@@ -45,16 +56,35 @@ export const signup = (userData) =>
   });
 
 // Login
-export const login = (credentials) =>
-  request("/users/login", {
+export const login = async (credentials) => {
+  const data = await request("/users/login", {
     method: "POST",
     body: JSON.stringify(credentials),
   });
 
+  if (data.token) {
+    setAccessToken(data.token);
+  }
+
+  return data;
+};
+
 // Refresh access token
-export const refreshToken = () =>
-  request("/users/newAxcToken", {
+export const refreshToken = async () => {
+  const data = await request("/users/newAxcToken", {
     method: "POST",
   });
+
+  if (data.token) {
+    setAccessToken(data.token);
+  }
+
+  return data;
+};
+
+// Clear in-memory authentication
+export const clearAuth = () => {
+  clearAccessToken();
+};
 
 export { request };

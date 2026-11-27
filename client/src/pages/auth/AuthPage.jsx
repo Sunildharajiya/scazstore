@@ -1,14 +1,15 @@
 
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { login, signup } from "../../services/authApi";
+import { login, signup } from "../../services/authApi.js";
 
 import { useOutletContext } from "react-router-dom";
 
-const { setIsLoggedIn } = useOutletContext();
+
 
 export const AuthPage = ({ mode = "login" }) => {
   const navigate = useNavigate();
+  const { setIsLoggedIn } = useOutletContext();
 
   const [form, setForm] = useState({
     firstName: "",
